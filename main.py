@@ -1,15 +1,13 @@
 import pygame
 import sys
 import copy
-from piece import Piece, black_pawn_evaluation, white_pawn_evaluation, white_knight_evaluation, white_bishop_evaluation, white_king_evaluation, white_rook_evaluation
-from moves import Move, black_pawn_moves, white_pawn_moves, white_knight_moves, white_bishop_moves, white_king_moves, white_rook_moves
-import random
+from piece import Piece
+from moves import Move
+from board import fill_board, make_board_move, undo_board_move, board, BOARD_SIZE, COLS, ROWS
 
 pygame.init()
 
 # Board size
-BOARD_SIZE = 480
-ROWS, COLS = 8, 5
 SQUARE_SIZE = BOARD_SIZE // COLS
 
 # Side panel size
@@ -32,20 +30,6 @@ for name in piece_names:
     pieces[name] = pygame.image.load(f'assets/{name}.png')
     pieces[name] = pygame.transform.scale(pieces[name], (SQUARE_SIZE, SQUARE_SIZE))
 
-# Board initialization, populated when main is ran
-board = [
-    [None] * 5,
-    [None] * 5,
-    [None] * 5,
-    [None] * 5,
-    [None] * 5,
-    [None] * 5,
-    [None] * 5,
-    [None] * 5,
-]
-
-piece_lst = [None] * 24 # black pieces are 0-14, white pieces are 15-23
-
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Zerg Chess")
 
@@ -56,82 +40,6 @@ undo_button = pygame.Rect(BOARD_SIZE + 20, 40, PANEL_WIDTH - 40, 40)
 ai_button = pygame.Rect(BOARD_SIZE + 20, 100, PANEL_WIDTH - 40, 40)
 
 # Utility functions
-
-# Make the initial board state, if not given a back rank for white it will randomize
-# white_back_rank format, must contain all 4 pieces: " knbr", or "r bnk", ect...
-def fill_board(white_back_rank=None):
-    
-    # initiate black pieces
-    i = 0
-    for r in range(3):
-        for c in range(COLS):
-            piece = Piece(id=i, r=r, c=c, color=False, png='bp', 
-                          move_generator=black_pawn_moves, 
-                          evaluation_function=black_pawn_evaluation)
-            piece_lst[i] = piece
-            board[r][c] = piece
-            i +=1
-            
-    # initiate white pawns on 7th rank (r = 6)
-    for c in range(COLS):
-        piece = Piece(id=i, r=6, c=c, color=True, png='wp', 
-                      move_generator=white_pawn_moves, 
-                      evaluation_function=white_pawn_evaluation)
-        piece_lst[i] = piece
-        board[6][c] = piece
-        i += 1
-
-    # make the back rank
-    # initalize the pieces
-    king = Piece(id=i, r=0, c=0, color=True, png='wk', 
-                 move_generator=white_king_moves, 
-                 evaluation_function=white_king_evaluation)
-    piece_lst[i] = king
-
-    knight = Piece(id=i+1, r=0, c=0, color=True, png='wn', 
-                   move_generator=white_knight_moves, 
-                   evaluation_function=white_knight_evaluation)
-    piece_lst[i+1] = knight
-
-    bishop = Piece(id=i+2, r=0, c=0, color=True, png='wb', 
-                   move_generator=white_bishop_moves, 
-                   evaluation_function=white_bishop_evaluation)
-    piece_lst[i+2] = bishop
-
-    rook = Piece(id=i+3, r=0, c=0, color=True, png='wr', 
-                 move_generator=white_rook_moves, 
-                 evaluation_function=white_rook_evaluation)
-    piece_lst[i+3] = rook
-
-    if white_back_rank is None:
-        char_list = list('knrb ')
-        random.shuffle(char_list)
-        white_back_rank = "".join(char_list)
-    
-    c = 0
-    
-    for char in white_back_rank:
-        if char == " ":
-            c += 1
-            continue
-        if char == "k":
-            board[7][c] = king
-            c+=1
-            continue
-        if char == "n":
-            board[7][c] = knight
-            c+=1
-            continue
-        if char == "b":
-            board[7][c] = bishop
-            c+=1
-            continue
-        if char == "r":
-            board[7][c] = rook
-            c+=1
-            continue
-
-    return
 
 def draw_board(win):
     for row in range(ROWS):
@@ -182,63 +90,14 @@ def is_opponent(piece1: Piece, piece2: Piece):
         return False
     return piece1.color != piece2.color
 
-# Move generation
-def valid_moves(board, row, col):
-    piece = board[row][col]
-    moves = []
-    if piece == "":
-        return moves
-    color = piece[0]
-    p = piece[1]
-
-    directions = []
-    if p == "p":  # Pawn
-        direction = -1 if color == "w" else 1
-        start_row = 6 if color == "w" else 1
-        if 0 <= row+direction < ROWS and board[row+direction][col] == "":
-            moves.append((row+direction, col))
-            if row == start_row and board[row+2*direction][col] == "":
-                moves.append((row+2*direction, col))
-        for dc in [-1, 1]:
-            nr, nc = row+direction, col+dc
-            if 0 <= nr < ROWS and 0 <= nc < COLS and is_opponent(piece, board[nr][nc]):
-                moves.append((nr, nc))
-
-    elif p == "r":  # Rook
-        directions = [(1,0), (-1,0), (0,1), (0,-1)]
-    elif p == "b":  # Bishop
-        directions = [(1,1), (-1,-1), (1,-1), (-1,1)]
-    elif p == "q":  # Queen
-        directions = [(1,0), (-1,0), (0,1), (0,-1), (1,1), (-1,-1), (1,-1), (-1,1)]
-    elif p == "k":  # King
-        for dr in [-1,0,1]:
-            for dc in [-1,0,1]:
-                if dr == 0 and dc == 0:
-                    continue
-                nr, nc = row+dr, col+dc
-                if 0 <= nr < ROWS and 0 <= nc < COLS and (board[nr][nc] == "" or is_opponent(piece, board[nr][nc])):
-                    moves.append((nr, nc))
-    elif p == "n":  # Knight
-        jumps = [(2,1),(2,-1),(-2,1),(-2,-1),(1,2),(1,-2),(-1,2),(-1,-2)]
-        for dr, dc in jumps:
-            nr, nc = row+dr, col+dc
-            if 0 <= nr < ROWS and 0 <= nc < COLS and (board[nr][nc] == "" or is_opponent(piece, board[nr][nc])):
-                moves.append((nr, nc))
-
-    for dr, dc in directions:
-        nr, nc = row+dr, col+dc
-        while 0 <= nr < ROWS and 0 <= nc < COLS:
-            if board[nr][nc] == "":
-                moves.append((nr, nc))
-            elif is_opponent(piece, board[nr][nc]):
-                moves.append((nr, nc))
-                break
-            else:
-                break
-            nr += dr
-            nc += dc
-
-    return moves
+# search the list and return if there is a move with the end pos (r, c)
+def find_mv(r, c, mvs):
+    # iterate through moves
+    for mv in mvs:
+        if r == mv.re and c == mv.ce:
+            return mv
+    return None
+    
 
 def promote_pawns(board):
     for col in range(COLS):
@@ -254,7 +113,7 @@ def main():
     legal_moves = []
     turn = True  # White starts
 
-    history = [copy.deepcopy(board)]  # store board states
+    history = []  # no moves to undo
 
     run = True
     while run:
@@ -263,11 +122,10 @@ def main():
         draw_panel(WIN)
 
         # Highlight moves
-        legal_destinations = [(mv.re, mv.ce) for mv in legal_moves]
-        for r, c in legal_destinations:
+        for mv in legal_moves:
             s = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE), pygame.SRCALPHA)
             s.fill(HIGHLIGHT)
-            WIN.blit(s, (c*SQUARE_SIZE, r*SQUARE_SIZE))
+            WIN.blit(s, (mv.ce*SQUARE_SIZE, mv.re*SQUARE_SIZE))
 
         pygame.display.flip()
         clock.tick(60)
@@ -280,13 +138,13 @@ def main():
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if undo_button.collidepoint(event.pos):
-                    if len(history) > 1:
-                        history.pop()
-                        prev_state = history[-1]
-                        for r in range(8):
-                            for c in range(5):
-                                board[r][c] = prev_state[r][c]
+                    if history:
+                        undo_board_move(mv=history.pop())
                         turn = not turn  # reverse turn
+                    continue
+
+                if ai_button.collidepoint(event.pos):
+                    # TODO, execute ai move
                     continue
 
                 row, col = get_square_under_mouse()
@@ -295,19 +153,16 @@ def main():
                 piece = board[row][col]
 
                 if selected:
-                    if (row, col) in legal_destinations:
-                        mv_piece = board[selected[0]][selected[1]]
-                        mv_piece.r, mv_piece.c = row, col
-                        board[row][col] = mv_piece
-                        board[selected[0]][selected[1]] = None
-                        promote_pawns(board)
-                        history.append(copy.deepcopy(board))  # save state
+                    mv = find_mv(r=row, c=col, mvs=legal_moves)
+                    if mv:
+                        make_board_move(mv=mv)
+                        history.append(mv)  # save move
                         turn = not turn
                     selected, legal_moves = None, []
                 else:
                     if piece and piece.color == turn:
                         selected = (row, col)
-                        legal_moves = piece.get_moves(board)
+                        legal_moves = piece.get_moves(board, history[-1] if len(history) != 0 else None)
                         legal_moves = legal_moves[0] + legal_moves[1]
 
 if __name__ == "__main__":

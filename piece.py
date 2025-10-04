@@ -24,8 +24,8 @@ class Piece:
         self.png = new_png
         self.mv_generation = new_generation
     
-    def get_moves(self, board):
-        return self.move_generator(self, board)
+    def get_moves(self, board, prev_move):
+        return self.move_generator(self, board, prev_move)
 
 # TODO, add position and move additional vals
 def white_king_evaluation(piece, board):
