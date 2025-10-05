@@ -5,6 +5,7 @@ Handles all board related functions and initializations
 from piece import Piece, black_pawn_evaluation, white_pawn_evaluation, white_knight_evaluation, white_bishop_evaluation, white_king_evaluation, white_rook_evaluation
 from moves import Move, black_pawn_moves, white_pawn_moves, white_knight_moves, white_bishop_moves, white_king_moves, white_rook_moves
 import random
+from typing import List, Tuple
 
 # Board initialization, populated when main is ran
 BOARD_SIZE = 480
@@ -23,10 +24,12 @@ board = [
 
 piece_lst = [None] * 24 # black pieces are 0-14, white pieces are 15-23
 
+w_captured = 0
+b_captured = 0
+
 # Make the initial board state, if not given a back rank for white it will randomize
 # white_back_rank format, must contain all 4 pieces: " knbr", or "r bnk", ect...
 def fill_board(white_back_rank=None):
-    
     # initiate black pieces
     i = 0
     for r in range(3):
@@ -108,7 +111,9 @@ def make_board_move(mv: Move):
     # board[row][col] = mv_piece
     # board[selected[0]][selected[1]] = None
     # selected = rs, cs
-    
+    global b_captured
+    global w_captured
+
     mv.piece.r, mv.piece.c = mv.re, mv.ce
     board[mv.re][mv.ce] = mv.piece
     board[mv.rs][mv.cs] = None
@@ -117,6 +122,10 @@ def make_board_move(mv: Move):
         if mv.enpassant_cap:
             board[mv.piece.r-1][mv.piece.c] = None
         mv.capture.r, mv.capture.c = -1, -1
+        if mv.capture.color: # if white we increment
+            w_captured = w_captured + 1
+        else:
+            b_captured = b_captured + 1
     
     if mv.promotion:
         mv.piece.png = 'wr'
@@ -127,6 +136,9 @@ def make_board_move(mv: Move):
 
 def undo_board_move(mv: Move):
     # reset positions! and piece data
+    global b_captured
+    global w_captured
+    
     mv.piece.r, mv.piece.c = mv.rs, mv.cs
     board[mv.rs][mv.cs] = mv.piece
     board[mv.re][mv.ce] = None
@@ -139,9 +151,59 @@ def undo_board_move(mv: Move):
         else:
             mv.capture.r, mv.capture.c = mv.re, mv.ce
             board[mv.re][mv.ce] = mv.capture
+
+        if mv.capture.color: # if white we decrement
+            w_captured = w_captured - 1
+        else:
+            b_captured = b_captured - 1
     
     # restore promotion
     if mv.promotion:
         mv.piece.png = 'wp'
         mv.piece.move_generator = white_pawn_moves
         mv.piece.evaluation_function = white_pawn_evaluation
+    
+def evaluate_board() -> int:
+    # iterate through pieces and evaluate each
+    eval = 0
+    for pc in piece_lst:
+        eval += pc.evaluate(board)
+    
+    return eval
+
+def check_win() -> int:
+    # check if black piece on back rank
+    # check if all white pieces are captured
+    # check if all black pieces are captured
+    
+    # captures first
+    if b_captured == 15:
+        return 1000
+    if w_captured == 9:
+        return -1000
+    
+    for pc in board[7]: # for each pc in back rank check if black
+        if pc and not pc.color:
+            return -1000
+    
+    return 0
+
+def get_player_moves(turn:bool, prev_move: Move) -> Tuple[List[Move], List[Move]]:
+    # init lists
+    captures = []
+    moves = []
+
+    if turn:
+        for pc in piece_lst[15:24]:
+            if not pc.is_captured():
+                mvs = pc.get_moves(board, prev_move) # (captures, moves)
+                captures += mvs[0]
+                moves += mvs[1]
+    else:
+        for pc in piece_lst[0:15]:
+            if not pc.is_captured():
+                mvs = pc.get_moves(board, prev_move) # (captures, moves)
+                captures += mvs[0]
+                moves += mvs[1]
+
+    return (captures, moves)

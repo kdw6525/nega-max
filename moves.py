@@ -36,6 +36,12 @@ class Move:
         self.promotion = promotion
         self.enpassant = enpassant
         self.enpassant_cap = enpassant_cap
+    
+    def __str__(self):
+        if self.capture:
+            return f"{self.piece} ({self.rs+1}, {self.cs+1}) to ({self.re+1}, {self.ce+1}) [capture: {self.capture} ({self.capture.r+1}, {self.capture.c+1})]"
+        else:
+            return f"{self.piece} ({self.rs+1}, {self.cs+1}) to ({self.re+1}, {self.ce+1})"
 
 
 # Move generation functions
@@ -180,6 +186,7 @@ def white_pawn_moves(piece:Piece, board: List[List[Piece]], prev_mv: Move) -> Tu
     return (captures, moves)
 
 def black_pawn_moves(piece:Piece, board: List[List[Piece]], prev_mv: Move) -> Tuple[List[Move], List[Move]]:
+    # prev_mv will never be None since black moves second
     moves = []
     captures = [] 
     

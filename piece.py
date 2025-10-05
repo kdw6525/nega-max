@@ -24,8 +24,17 @@ class Piece:
         self.png = new_png
         self.mv_generation = new_generation
     
+    def evaluate(self, board) -> int:
+        return self.evaluation_function(self, board)
+    
     def get_moves(self, board, prev_move):
         return self.move_generator(self, board, prev_move)
+    
+    def is_captured(self):
+        return self.c == -1
+    
+    def __str__(self):
+        return self.png
 
 # TODO, add position and move additional vals
 def white_king_evaluation(piece, board):

@@ -4,6 +4,7 @@ import copy
 from piece import Piece
 from moves import Move
 from board import fill_board, make_board_move, undo_board_move, board, BOARD_SIZE, COLS, ROWS
+from search import nega_max_root
 
 pygame.init()
 
@@ -145,6 +146,16 @@ def main():
 
                 if ai_button.collidepoint(event.pos):
                     # TODO, execute ai move
+                    prev_move = None
+                    if history:
+                        prev_move = history[-1]
+                    ai_mv = nega_max_root(prev_move=prev_move, d=5, alpha=-1000, beta=1000, turn=turn)
+                    if ai_mv:
+                        make_board_move(mv=ai_mv)
+                        history.append(ai_mv)
+                        turn = not turn
+                    # reset selection
+                    selected, legal_moves = None, []
                     continue
 
                 row, col = get_square_under_mouse()
