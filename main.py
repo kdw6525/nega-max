@@ -1,6 +1,6 @@
 import pygame
 import sys
-import copy
+import numpy as np
 from piece import Piece
 from moves import Move
 from board import fill_board, make_board_move, undo_board_move, board, BOARD_SIZE, COLS, ROWS
@@ -149,6 +149,7 @@ def main():
                     prev_move = None
                     if history:
                         prev_move = history[-1]
+                    # make depth odd so the first player doesn't do something dumb
                     ai_mv = nega_max_root(prev_move=prev_move, d=5, alpha=-1000, beta=1000, turn=turn)
                     if ai_mv:
                         make_board_move(mv=ai_mv)

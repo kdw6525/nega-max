@@ -165,7 +165,14 @@ def undo_board_move(mv: Move):
     
 def evaluate_board() -> int:
     # iterate through pieces and evaluate each
+    # the more in depth the evaluation, the better chance of pruning (probably)
     eval = 0
+
+    # generate moves, make list for each piece [[I capture moves], [I am captured moves]]
+    # if I am ever captured, I have to evaluate how meaning full that is for the game
+    # if I can capture, it doesn't matter if I'm going to get captured now
+
+    # evaluation also checks 
     for pc in piece_lst:
         eval += pc.evaluate(board)
     
@@ -207,3 +214,15 @@ def get_player_moves(turn:bool, prev_move: Move) -> Tuple[List[Move], List[Move]
                 moves += mvs[1]
 
     return (captures, moves)
+
+def print_board():
+    # loop through board and print piece or spaces 
+    board_str = ""
+    for row in board:
+        for pc in row:
+            if pc:
+                board_str += f'{pc} '
+            else:
+                board_str += '   '
+        board_str += '\n'
+    print(board_str)

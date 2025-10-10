@@ -7,7 +7,7 @@
 # 3. Beta is an upper bound on what the opponent can achieve
 #
 
-from board import evaluate_board, check_win, get_player_moves, make_board_move, undo_board_move
+from board import evaluate_board, check_win, get_player_moves, make_board_move, undo_board_move, print_board
 from moves import Move
 
 def nega_max_root(prev_move: Move, d:int, alpha: int, beta:int, turn:bool) -> Move:
@@ -30,12 +30,15 @@ def nega_max_root(prev_move: Move, d:int, alpha: int, beta:int, turn:bool) -> Mo
     for cap_mv in mvs[0]:
         make_board_move(mv=cap_mv)
         val = -1 * nega_max(prev_move=cap_mv, d=d-1, alpha=-1*beta, beta=-1*alpha, val_flip=val_flip*-1, turn=not turn)
+        print(val)
         if val > score:
             score = val
             mv = cap_mv
             if score > alpha:
                 alpha = score
             if score >= beta:
+                print_board()
+                print('PRUNE')
                 undo_board_move(mv=cap_mv)
                 return mv
         undo_board_move(mv=cap_mv)
@@ -49,6 +52,8 @@ def nega_max_root(prev_move: Move, d:int, alpha: int, beta:int, turn:bool) -> Mo
             if score > alpha:
                 alpha = score
             if score >= beta:
+                print_board()
+                print('PRUNE')
                 undo_board_move(mv=movement_mv)
                 return mv
         undo_board_move(mv=movement_mv)
@@ -59,8 +64,10 @@ def nega_max(prev_move:Move, d: int, alpha: int, beta:int, turn:bool, val_flip:i
     # check if draw by getting moves, but check depth/win before anything
     win = check_win()
     if win:
+        print_board()
         return win * val_flip
     if d == 0:
+        print_board()
         return evaluate_board() * val_flip
     # get moves and check for stalemate
     mvs = get_player_moves(turn=turn, prev_move=prev_move)
@@ -77,6 +84,8 @@ def nega_max(prev_move:Move, d: int, alpha: int, beta:int, turn:bool, val_flip:i
             if score > alpha:
                 alpha = score
             if score >= beta:
+                print_board()
+                print('PRUNE')
                 undo_board_move(mv=cap_mv)
                 return score * val_flip
         undo_board_move(mv=cap_mv)
@@ -86,10 +95,13 @@ def nega_max(prev_move:Move, d: int, alpha: int, beta:int, turn:bool, val_flip:i
         make_board_move(mv=movement_mv)
         val = -1 * nega_max(prev_move=movement_mv, d=d-1, alpha=-1*beta, beta=-1*alpha, val_flip=val_flip*-1, turn=not turn)
         if val > score:
+            print(val)
             score = val
             if score > alpha:
                 alpha = score
             if score >= beta:
+                print_board()
+                print('PRUNE')
                 undo_board_move(mv=movement_mv)
                 return score * val_flip
         undo_board_move(mv=movement_mv)

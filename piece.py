@@ -8,10 +8,12 @@ Create piece class:
 4. png for display
 5. move generation function
 """
+import numpy as np
+from typing import List
 
 class Piece:
     # init a piece obj, should mostly stay the same except updates over time
-    def __init__(self, id:int, r:int, c:int, color:bool, png, move_generator, evaluation_function):
+    def __init__(self, id:int, r:int, c:int, color:bool, png:str, move_generator, evaluation_function):
         self.id = id
         self.r = r
         self.c = c
@@ -37,25 +39,37 @@ class Piece:
         return self.png
 
 # TODO, add position and move additional vals
-def white_king_evaluation(piece, board):
+def white_king_evaluation(piece: Piece, board: List[List[Piece]]):
+    if piece.is_captured():
+        return 0 
     return 2
 
 # TODO, add position and move additional vals
-def white_knight_evaluation(piece, board):
+def white_knight_evaluation(piece: Piece, board: List[List[Piece]]):
+    if piece.is_captured():
+        return 0 
     return 4
 
 # TODO, add position and move additional vals
-def white_bishop_evaluation(piece, board):
+def white_bishop_evaluation(piece: Piece, board: List[List[Piece]]):
+    if piece.is_captured():
+        return 0 
     return 3
 
 # TODO, add position and move additional vals
-def white_rook_evaluation(piece, board):
+def white_rook_evaluation(piece: Piece, board: List[List[Piece]]):
+    if piece.is_captured():
+        return 0 
     return 5
 
 # TODO, add position and move additional vals
-def white_pawn_evaluation(piece, board):
+def white_pawn_evaluation(piece: Piece, board: List[List[Piece]]):
+    if piece.is_captured():
+        return 0 
     return 1
 
 # TODO, add position and move additional vals
-def black_pawn_evaluation(piece, board):
+def black_pawn_evaluation(piece: Piece, board: List[List[Piece]]):
+    if piece.is_captured():
+        return 0 
     return -1
