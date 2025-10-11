@@ -1,0 +1,5 @@
+__pycache__/board.cpython-310.pyc
+__pycache__/moves.cpython-310.pyc
+__pycache__/piece.cpython-310.pyc
+__pycache__/search.cpython-310.pyc
+__pycache__/zobrist_hashing.cpython-310.pyc
