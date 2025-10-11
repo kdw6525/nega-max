@@ -1,10 +1,12 @@
 import pygame
+from sys import argv
 import sys
 import numpy as np
 from piece import Piece
 from moves import Move
-from board import fill_board, make_board_move, undo_board_move, board, BOARD_SIZE, COLS, ROWS
+from board import fill_board, make_board_move, undo_board_move, calculate_zb_hash, update_board_zb_hash, board, BOARD_SIZE, COLS, ROWS
 from search import nega_max_root
+from zobrist_hashing import tt_load, zobrist_load
 
 pygame.init()
 
@@ -39,6 +41,8 @@ FONT = pygame.font.SysFont("arial", 20)
 # Button rect
 undo_button = pygame.Rect(BOARD_SIZE + 20, 40, PANEL_WIDTH - 40, 40)
 ai_button = pygame.Rect(BOARD_SIZE + 20, 100, PANEL_WIDTH - 40, 40)
+white_ai_button = pygame.Rect(BOARD_SIZE + 20, 160, PANEL_WIDTH - 40, 40)
+black_ai_button = pygame.Rect(BOARD_SIZE + 20, 220, PANEL_WIDTH - 40, 40)
 
 # Utility functions
 
@@ -77,6 +81,24 @@ def draw_panel(win):
     text = FONT.render("AI Move", True, TEXT_COLOR)
     win.blit(text, (ai_button.x + (ai_button.width - text.get_width()) // 2,
                     ai_button.y + (ai_button.height - text.get_height()) // 2))
+    
+    if white_ai_button.collidepoint(mouse):
+        pygame.draw.rect(win, BUTTON_HOVER, white_ai_button)
+    else:
+        pygame.draw.rect(win, BUTTON_COLOR, white_ai_button)
+
+    text = FONT.render("Toggle W AI", True, TEXT_COLOR)
+    win.blit(text, (white_ai_button.x + (white_ai_button.width - text.get_width()) // 2,
+                    white_ai_button.y + (white_ai_button.height - text.get_height()) // 2))
+    
+    if black_ai_button.collidepoint(mouse):
+        pygame.draw.rect(win, BUTTON_HOVER, black_ai_button)
+    else:
+        pygame.draw.rect(win, BUTTON_COLOR, black_ai_button)
+
+    text = FONT.render("Toggle B AI", True, TEXT_COLOR)
+    win.blit(text, (black_ai_button.x + (black_ai_button.width - text.get_width()) // 2,
+                    black_ai_button.y + (black_ai_button.height - text.get_height()) // 2))
 
 
 def get_square_under_mouse():
@@ -98,21 +120,31 @@ def find_mv(r, c, mvs):
         if r == mv.re and c == mv.ce:
             return mv
     return None
-    
-
-def promote_pawns(board):
-    for col in range(COLS):
-        if board[0][col] == "wp":
-            board[0][col] = "wq"
-        if board[7][col] == "bp":
-            board[7][col] = "bq"
 
 def main():
-    fill_board()
+    white_back_rank = None
+    if len(argv) == 2:
+        white_back_rank = argv[1]
+    fill_board(white_back_rank=white_back_rank)
     clock = pygame.time.Clock()
     selected = None
     legal_moves = []
     turn = True  # White starts
+    ai_white = False
+    ai_black = False
+    depth = 7
+
+    # transposition table stuff here: update these manually cuz lazy
+    use_tt = True
+    update_tt = True
+    zb = None
+    tt = None
+    board_zb_hash = None
+    if use_tt:
+        tt = tt_load()
+        zb = zobrist_load()
+        board_zb_hash = calculate_zb_hash(zb=zb)
+        print(board_zb_hash)
 
     history = []  # no moves to undo
 
@@ -140,7 +172,7 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if undo_button.collidepoint(event.pos):
                     if history:
-                        undo_board_move(mv=history.pop())
+                        board_zb_hash = undo_board_move(mv=history.pop(), zb=zb, board_zb_hash=board_zb_hash)
                         turn = not turn  # reverse turn
                     continue
 
@@ -150,13 +182,21 @@ def main():
                     if history:
                         prev_move = history[-1]
                     # make depth odd so the first player doesn't do something dumb
-                    ai_mv = nega_max_root(prev_move=prev_move, d=5, alpha=-1000, beta=1000, turn=turn)
+                    ai_mv = nega_max_root(prev_move=prev_move, d=depth, alpha=-1000, beta=1000, turn=turn)
                     if ai_mv:
                         make_board_move(mv=ai_mv)
                         history.append(ai_mv)
                         turn = not turn
                     # reset selection
                     selected, legal_moves = None, []
+                    continue
+
+                if white_ai_button.collidepoint(event.pos):
+                    ai_white = not ai_white
+                    continue
+
+                if black_ai_button.collidepoint(event.pos):
+                    ai_black = not ai_black
                     continue
 
                 row, col = get_square_under_mouse()
@@ -167,7 +207,7 @@ def main():
                 if selected:
                     mv = find_mv(r=row, c=col, mvs=legal_moves)
                     if mv:
-                        make_board_move(mv=mv)
+                        board_zb_hash = make_board_move(mv=mv, zb=zb, board_zb_hash=board_zb_hash)
                         history.append(mv)  # save move
                         turn = not turn
                     selected, legal_moves = None, []
@@ -176,6 +216,34 @@ def main():
                         selected = (row, col)
                         legal_moves = piece.get_moves(board, history[-1] if len(history) != 0 else None)
                         legal_moves = legal_moves[0] + legal_moves[1]
+        # if no event check if ai turn is to play
+        if ai_white and turn:
+            prev_move = None
+            if history:
+                prev_move = history[-1]
+            # make depth odd so the first player doesn't do something dumb
+            ai_mv = nega_max_root(prev_move=prev_move, d=depth, alpha=-1000, beta=1000, turn=turn)
+            if ai_mv:
+                make_board_move(mv=ai_mv)
+                history.append(ai_mv)
+                turn = not turn
+            # reset selection
+            selected, legal_moves = None, []
+            continue
+
+        if ai_black and not turn:
+            prev_move = None
+            if history:
+                prev_move = history[-1]
+            # make depth odd so the first player doesn't do something dumb
+            ai_mv = nega_max_root(prev_move=prev_move, d=depth, alpha=-1000, beta=1000, turn=turn)
+            if ai_mv:
+                make_board_move(mv=ai_mv)
+                history.append(ai_mv)
+                turn = not turn
+            # reset selection
+            selected, legal_moves = None, []
+            continue
 
 if __name__ == "__main__":
     main()

@@ -26,7 +26,7 @@ ROWS, COLS = 8, 5
 
 class Move:
     # track the piece, start, destination, captured piece, and if promotion
-    def __init__(self, piece: Piece, rs:int, cs:int, re:int, ce:int, capture: Piece, promotion: bool, enpassant:bool, enpassant_cap:bool):
+    def __init__(self, piece: Piece, rs:int, cs:int, re:int, ce:int, capture: Piece, promotion: int, enpassant:bool, enpassant_cap:bool):
         self.piece = piece
         self.rs = rs
         self.cs = cs
@@ -63,9 +63,9 @@ def white_king_moves(piece:Piece, board: List[List[Piece]], prev_mv: Move) -> Tu
             cap = board[nr][nc]
             if cap:
                 if cap.color != piece.color:
-                    captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=False, enpassant=False, enpassant_cap=False))
+                    captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=0, enpassant=False, enpassant_cap=False))
             else:
-                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=None, promotion=False, enpassant=False, enpassant_cap=False))
+                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=None, promotion=0, enpassant=False, enpassant_cap=False))
 
 
     return (captures, moves)
@@ -92,9 +92,9 @@ def white_knight_moves(piece:Piece, board: List[List[Piece]], prev_mv: Move) -> 
         cap = board[nr][nc]
         if cap:
             if (cap.color != piece.color):
-                captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=False, enpassant=False, enpassant_cap=False))
+                captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=0, enpassant=False, enpassant_cap=False))
         else:
-            moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=None, promotion=False, enpassant=False, enpassant_cap=False))
+            moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=None, promotion=0, enpassant=False, enpassant_cap=False))
 
     return (captures, moves)
 
@@ -121,11 +121,11 @@ def white_bishop_moves(piece:Piece, board: List[List[Piece]], prev_mv: Move) -> 
             if cap:
                 # but if there is a piece of other color here we can capture it
                 if cap.color != piece.color:
-                    captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=False, enpassant=False, enpassant_cap=False))
+                    captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=0, enpassant=False, enpassant_cap=False))
                 break
             else:
                 # no piece we keep movin!
-                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=None, promotion=False, enpassant=False, enpassant_cap=False))
+                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=None, promotion=0, enpassant=False, enpassant_cap=False))
 
     return (captures, moves)
 
@@ -152,11 +152,11 @@ def white_rook_moves(piece:Piece, board: List[List[Piece]], prev_mv: Move) -> Tu
             if cap:
                 # but if there is a piece of other color here we can capture it
                 if cap.color != piece.color:
-                    captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=False, enpassant=False, enpassant_cap=False))
+                    captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=0, enpassant=False, enpassant_cap=False))
                 break
             else:
                 # no piece we keep movin!
-                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=None, promotion=False, enpassant=False, enpassant_cap=False))
+                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=None, promotion=0, enpassant=False, enpassant_cap=False))
 
     return (captures, moves)
 
@@ -168,20 +168,32 @@ def white_pawn_moves(piece:Piece, board: List[List[Piece]], prev_mv: Move) -> Tu
     promotion = nr == 0
     if board[nr][piece.c] is None:
         if piece.r == 6:
-            moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=piece.c, capture=None, promotion=promotion, enpassant=False, enpassant_cap=False))
+            moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=piece.c, capture=None, promotion=0, enpassant=False, enpassant_cap=False))
             if board[nr-1][piece.c] is None:
-                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr-1, ce=piece.c, capture=None, promotion=promotion, enpassant=True, enpassant_cap=False))
+                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr-1, ce=piece.c, capture=None, promotion=0, enpassant=True, enpassant_cap=False))
         else:
-            moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=piece.c, capture=None, promotion=promotion, enpassant=False, enpassant_cap=False))
+            if promotion:
+                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=piece.c, capture=None, promotion=1, enpassant=False, enpassant_cap=False))
+                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=piece.c, capture=None, promotion=2, enpassant=False, enpassant_cap=False))
+                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=piece.c, capture=None, promotion=3, enpassant=False, enpassant_cap=False))
+                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=piece.c, capture=None, promotion=4, enpassant=False, enpassant_cap=False))
+            else:
+                moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=piece.c, capture=None, promotion=0, enpassant=False, enpassant_cap=False))
 
     # check captures:
     for dc in [-1, 1]:
         nc = piece.c + dc
         if nc < 0 or nc >= COLS:
-            break
+            continue
         cap = board[nr][nc]
         if cap and (cap.color != piece.color):
-            captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=promotion, enpassant=False, enpassant_cap=False))
+            if promotion:
+                captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=1, enpassant=False, enpassant_cap=False))
+                captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=2, enpassant=False, enpassant_cap=False))
+                captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=3, enpassant=False, enpassant_cap=False))
+                captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=4, enpassant=False, enpassant_cap=False))
+            else:
+                captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=0, enpassant=False, enpassant_cap=False))
 
     return (captures, moves)
 
@@ -193,9 +205,9 @@ def black_pawn_moves(piece:Piece, board: List[List[Piece]], prev_mv: Move) -> Tu
     nr = piece.r + 1
     if board[nr][piece.c] is None:
         if nr == ROWS-1:
-            captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=piece.c, capture=None, promotion=False, enpassant=False, enpassant_cap=False))
+            captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=piece.c, capture=None, promotion=0, enpassant=False, enpassant_cap=False))
         else:
-            moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=piece.c, capture=None, promotion=False,enpassant=False, enpassant_cap=False))
+            moves.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=piece.c, capture=None, promotion=0,enpassant=False, enpassant_cap=False))
 
     # check captures:
     for dc in [-1, 1]:
@@ -204,14 +216,14 @@ def black_pawn_moves(piece:Piece, board: List[List[Piece]], prev_mv: Move) -> Tu
             break
         cap = board[nr][nc]
         if cap and (cap.color != piece.color):
-            captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=False, enpassant=False, enpassant_cap=False))
+            captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=cap, promotion=0, enpassant=False, enpassant_cap=False))
         
         if piece.r == 4:
             # if we can see enpassants 
             enpassant_cap = board[piece.r][nc]
             if enpassant_cap and (enpassant_cap.color != piece.color) and prev_mv.enpassant and enpassant_cap is prev_mv.piece:
                 # if there is a piece adjacent of opposite color, check if the previous move was enpassant and if it was the piece to move
-                captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=enpassant_cap, promotion=False, enpassant=False, enpassant_cap=True))
+                captures.append(Move(piece=piece, rs=piece.r, cs=piece.c, re=nr, ce=nc, capture=enpassant_cap, promotion=0, enpassant=False, enpassant_cap=True))
     
 
 

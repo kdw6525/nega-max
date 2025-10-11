@@ -27,10 +27,10 @@ TT_LEN = 5000000 # 2 million takes 50 mbs, 5 million takes 127 mbs (this is acce
 class TT_Entry:
     # entry to the table, storing elements described above
     def __init__(self, value:np.int16, depth:np.uint8, flag:np.uint8, best_move: Move):
-        self.value = value
-        self.depth = depth
-        self.flag = flag
-        self.best_move = best_move
+        self.value = value # heuristic found for this state
+        self.depth = depth # the depth where we found this 
+        self.flag = flag # 0 = exact, 1 = lower, 2 = upper
+        self.best_move = best_move # simply the best move, we will need to update the piece references after verifying
     
 
 def tt_store(tt:np.typing.ArrayLike, key: np.uint32, value:int, depth:int, flag:int, best_move: Move):
@@ -48,12 +48,12 @@ def tt_write(tt:np.typing.ArrayLike, fname='tt'):
 def tt_load(fname='tt.npy') -> np.typing.ArrayLike:
     return np.load(fname, allow_pickle=True)
 
-def make_zobrist(fname='zb'):
+def zobrist_make(fname='zb'):
     # ran only if zobrist file is not found when running this file
     zobrist = np.random.randint(low=0, high=4294967295, size=(6, 40), dtype=np.uint32)
     np.save(fname, zobrist)
 
-def load_zobrist(fname='zb.npy') -> np.typing.ArrayLike:
+def zobrist_load(fname='zb.npy') -> np.typing.ArrayLike:
     # read zobrist file and return the loaded array
     return np.load(fname, allow_pickle=False)
 
@@ -72,12 +72,12 @@ def main():
             tt = np.empty(shape=TT_LEN, dtype=object)
             tt_write(tt=tt)
         if not isfile('zb.npy'):
-            make_zobrist()
+            zobrist_make()
     
     if sys.argv[-1] == "-n":
         tt = np.empty(shape=TT_LEN, dtype=object)
         tt_write(tt=tt)
-        make_zobrist()
+        zobrist_make()
 
     if sys.argv[-1] == "-t":
         from piece import Piece, white_pawn_evaluation, black_pawn_evaluation
@@ -85,7 +85,7 @@ def main():
 
         tt = tt_load()
         tt_test = np.copy(tt)
-        zb = load_zobrist()
+        zb = zobrist_load()
         p1 = Piece(0, 3, 1, True, 'wp', white_pawn_moves, white_pawn_evaluation)
         p2 = Piece(1, 2, 2, False, 'bp', black_pawn_moves, black_pawn_evaluation)
 

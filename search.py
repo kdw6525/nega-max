@@ -10,7 +10,7 @@
 from board import evaluate_board, check_win, get_player_moves, make_board_move, undo_board_move, print_board
 from moves import Move
 
-def nega_max_root(prev_move: Move, d:int, alpha: int, beta:int, turn:bool) -> Move:
+def nega_max_root(prev_move: Move, d:int, alpha: int, beta:int, turn:bool, zb=None, board_zb_hash=None) -> Move:
     # root iteration set up val_flip
     # return move with best score
     win = check_win()
@@ -30,16 +30,15 @@ def nega_max_root(prev_move: Move, d:int, alpha: int, beta:int, turn:bool) -> Mo
     for cap_mv in mvs[0]:
         make_board_move(mv=cap_mv)
         val = -1 * nega_max(prev_move=cap_mv, d=d-1, alpha=-1*beta, beta=-1*alpha, val_flip=val_flip*-1, turn=not turn)
-        print(val)
+        # print(val)
         if val > score:
             score = val
             mv = cap_mv
             if score > alpha:
                 alpha = score
             if score >= beta:
-                print_board()
-                print('PRUNE')
                 undo_board_move(mv=cap_mv)
+                print(score)
                 return mv
         undo_board_move(mv=cap_mv)
     for movement_mv in mvs[1]:
@@ -52,23 +51,21 @@ def nega_max_root(prev_move: Move, d:int, alpha: int, beta:int, turn:bool) -> Mo
             if score > alpha:
                 alpha = score
             if score >= beta:
-                print_board()
-                print('PRUNE')
                 undo_board_move(mv=movement_mv)
+                print(score)
                 return mv
         undo_board_move(mv=movement_mv)
-
+    print(score)
     return mv
 
-def nega_max(prev_move:Move, d: int, alpha: int, beta:int, turn:bool, val_flip:int) -> int:
+def nega_max(prev_move:Move, d: int, alpha: int, beta:int, turn:bool, val_flip:int, zb=None, board_zb_hash=None) -> int:
     # check if draw by getting moves, but check depth/win before anything
     win = check_win()
     if win:
         print_board()
         return win * val_flip
     if d == 0:
-        print_board()
-        return evaluate_board() * val_flip
+        return evaluate_board(prev_move=prev_move) * val_flip
     # get moves and check for stalemate
     mvs = get_player_moves(turn=turn, prev_move=prev_move)
     if not mvs[0] and not mvs[1]: # if both are empty aka stalemate
@@ -84,10 +81,9 @@ def nega_max(prev_move:Move, d: int, alpha: int, beta:int, turn:bool, val_flip:i
             if score > alpha:
                 alpha = score
             if score >= beta:
-                print_board()
-                print('PRUNE')
+                # print('PRUNE')
                 undo_board_move(mv=cap_mv)
-                return score * val_flip
+                return score
         undo_board_move(mv=cap_mv)
 
     for movement_mv in mvs[1]:
@@ -95,15 +91,14 @@ def nega_max(prev_move:Move, d: int, alpha: int, beta:int, turn:bool, val_flip:i
         make_board_move(mv=movement_mv)
         val = -1 * nega_max(prev_move=movement_mv, d=d-1, alpha=-1*beta, beta=-1*alpha, val_flip=val_flip*-1, turn=not turn)
         if val > score:
-            print(val)
+            # print(val)
             score = val
             if score > alpha:
                 alpha = score
             if score >= beta:
-                print_board()
-                print('PRUNE')
+                # print('PRUNE')
                 undo_board_move(mv=movement_mv)
-                return score * val_flip
+                return score
         undo_board_move(mv=movement_mv)
 
-    return score * val_flip
+    return score
